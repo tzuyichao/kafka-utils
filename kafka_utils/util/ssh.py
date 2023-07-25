@@ -35,9 +35,26 @@ class Connection:
     """
 
     def __init__(self, client: SSHClient, forward_agent: bool, sudoable: bool) -> None:
+        self.client = client
         self.transport = client.get_transport()
         self.forward_agent = forward_agent
         self.sudoable = sudoable
+
+    def sudo_command(self, command: str, passwd: str, bufsize: int = -1) -> tuple[ChannelFile, ChannelFile, ChannelFile]:
+        new_command = f"sudo {command}"
+        return self.exec_command2(new_command, passwd, bufsize)
+
+    def exec_command(self, command: str, passwd: str, bufsize: int = -1, check_status: bool = True) -> tuple[ChannelFile, ChannelFile, ChannelFile]:
+        assert self.transport is not None
+        chan = self.client.invoke_shell()
+        chan.exec_command(command)
+        output = chan.recv(1024).decode('utf-8')
+        if 'Password for' in output:
+            chan.send(f"{passwd}\n")
+        stdin = chan.makefile('wb', bufsize)
+        stdout = chan.makefile('rb', bufsize)
+        stderr = chan.makefile_stderr('rb', bufsize)
+        return (stdin, stdout, stderr)
 
     def sudo_command(self, command: str, bufsize: int = -1) -> tuple[ChannelFile, ChannelFile, ChannelFile]:
         """Sudo a command on the SSH server.
@@ -81,10 +98,13 @@ class Connection:
             channel.get_pty()
 
         channel.exec_command(command)
-        if check_status and channel.recv_exit_status() != 0:
-            raise RuntimeError(f"Command execution error: {command}")
+        if check_status and channel.recv_exit_status() != 0:               # 
+            raise RuntimeError(f"Command execution error: {command}")      #
+        # time.sleep(2)
 
         stdin = channel.makefile('wb', bufsize)
+        # stdin.write("<PASSWPRD>")
+        # stdin.flush()
         stdout = channel.makefile('rb', bufsize)
         stderr = channel.makefile_stderr('rb', bufsize)
         return (stdin, stdout, stderr)
