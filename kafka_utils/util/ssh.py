@@ -55,6 +55,19 @@ class Connection:
         stdout = chan.makefile('rb', bufsize)
         stderr = chan.makefile_stderr('rb', bufsize)
         return (stdin, stdout, stderr)
+    
+    def put_file(self, local_path: str, remote_path: str) -> None:
+        """Put a file on the SSH server.
+
+        :param local_path: the local path of the file to put
+        :type local_path: str
+        :param remote_path: the remote path to put the file
+        :type remote_path: str
+        """
+        assert self.transport is not None
+        sftp = self.transport.open_sftp_client()
+        sftp.put(local_path, remote_path)
+        sftp.close()
 
     def sudo_command(self, command: str, bufsize: int = -1) -> tuple[ChannelFile, ChannelFile, ChannelFile]:
         """Sudo a command on the SSH server.
