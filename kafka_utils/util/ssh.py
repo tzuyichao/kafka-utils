@@ -42,7 +42,7 @@ class Connection:
 
     def sudo_command(self, command: str, passwd: str, bufsize: int = -1) -> tuple[ChannelFile, ChannelFile, ChannelFile]:
         new_command = f"sudo {command}"
-        return self.exec_command2(new_command, passwd, bufsize)
+        return self.exec_command(new_command, passwd, bufsize)
 
     def exec_command(self, command: str, passwd: str, bufsize: int = -1, check_status: bool = True) -> tuple[ChannelFile, ChannelFile, ChannelFile]:
         assert self.transport is not None
